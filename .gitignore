@@ -1,0 +1,23 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+*.ipch
+
+# Build output
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww]in32/
+*.obj
+*.pdb
+*.ilk
+*.exe
+*.log
+*.tlog
+
+# Generated benchmark data (regenerate with MazeGen / Benchmark)
+results/

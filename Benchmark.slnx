@@ -1,0 +1,9 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Benchmark/Benchmark.vcxproj" />
+  <Project Path="MazeGen/MazeGen.vcxproj" />
+  <Project Path="Pathfinding/Pathfinding.vcxproj" />
+</Solution>
