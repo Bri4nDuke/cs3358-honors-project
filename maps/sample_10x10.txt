@@ -1,0 +1,14 @@
+; hand-made sample for testing A* and Dijkstra before MazeGen is ready
+GRID 10 10
+START 0 0
+GOAL 9 9
+..........
+.########.
+.#......#.
+.#.####.#.
+.#.#..#.#.
+.#.#.##.#.
+.#.#....#.
+.#.######.
+.#........
+#.........
