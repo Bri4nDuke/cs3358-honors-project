@@ -2,38 +2,29 @@
 
 // Shared grid definition and map-file reader/writer used by MazeGen, Pathfinding, and Benchmark.
 // Header-only: just #include "Grid.h", no .cpp file to add to your project.
-//
+
 // ---------------------------------------------------------------------------
 // MAP FILE FORMAT (.txt)
 // ---------------------------------------------------------------------------
 //   GRID <width> <height>
 //   START <x> <y>
 //   GOAL <x> <y>
-//   <height lines, each exactly <width> characters>
+//   <height rows, each exactly <width> characters>
 //
 //   '.' = open cell, '#' = blocked cell.
 //   x is the column (0 = left), y is the row (0 = top).
-//   Lines starting with ';' anywhere in the header are comments (MazeGen writes the
-//   seed and obstacle density there so every map can be regenerated).
+//   Node ID = y * width + x
+//   Lines starting with ';' are comments (MazeGen records the seed and density there).
 //
-// Example (5 x 4, start top-left, goal bottom-right):
-//   GRID 5 4
-//   START 0 0
-//   GOAL 4 3
-//   ..#..
-//   .##..
-//   ...#.
-//   #....
+// MOVEMENT
+//   8-directional. Straight moves cost 1, diagonal moves cost sqrt(2).
+//   A diagonal may cut past ONE wall's corner, but may not squeeze between two.
 //
+//   Moving diagonally from S to G:
+//     ALLOWED:    BLOCKED:
+//     # G         # G
+//     S .         S #
 // ---------------------------------------------------------------------------
-// GRAPH MODEL (what A* and Dijkstra search)
-// ---------------------------------------------------------------------------
-//   Node ID   = y * width + x
-//   Movement  = 8-directional by default: straight moves cost 1, diagonal moves cost sqrt(2).
-//               A diagonal move is not allowed if it would cut the corner of a blocked cell.
-//               Set allowDiagonal = false for 4-directional movement (all moves cost 1).
-//   Heuristic = Euclidean distance between (x, y) coordinates, which never overestimates
-//               the true remaining cost under either movement rule (admissible).
 
 #include <cmath>
 #include <fstream>
@@ -69,6 +60,13 @@ struct Edge
 };
 
 // Straight-line distance between two nodes; use as h(n) with b = the goal node.
+//
+//    a *
+//      | .
+//   dy |   .      distance = sqrt(dx*dx + dy*dy)
+//      |     .
+//      +-------* b
+//          dx
 inline double euclidean(const Grid& g, int a, int b)
 {
     double dx = g.xOf(a) - g.xOf(b);
@@ -76,24 +74,24 @@ inline double euclidean(const Grid& g, int a, int b)
     return std::sqrt(dx * dx + dy * dy);
 }
 
-// Fills `out` with the open neighbors of `node`. Pass the same vector every call to avoid
-// reallocating it inside the search loop.
-inline void neighbors(const Grid& g, int node, std::vector<Edge>& out, bool allowDiagonal = true)
+// Fills `out` with the open neighbors of `node` and the cost of moving to each.
+// Pass the same vector every call so it is not reallocated inside the search loop.
+inline void neighbors(const Grid& g, int node, std::vector<Edge>& out)
 {
+    // Directions 0-3 are straight (right, left, down, up); 4-7 are diagonal.
     static const int dx[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
     static const int dy[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
     static const double diagonalCost = std::sqrt(2.0);
 
     out.clear();
     int x = g.xOf(node), y = g.yOf(node);
-    int directions = allowDiagonal ? 8 : 4;
-    for (int i = 0; i < directions; ++i)
+    for (int i = 0; i < 8; ++i)
     {
         int nx = x + dx[i], ny = y + dy[i];
         if (!g.isOpen(nx, ny))
             continue;
-        if (i >= 4 && (!g.isOpen(nx, y) || !g.isOpen(x, ny)))
-            continue; // no cutting corners past a wall
+        if (i >= 4 && !g.isOpen(nx, y) && !g.isOpen(x, ny))
+            continue; // both side cells are walls: no squeezing between them
         out.push_back({ g.id(nx, ny), i < 4 ? 1.0 : diagonalCost });
     }
 }
@@ -138,7 +136,7 @@ inline Grid loadGrid(const std::string& path)
             line.pop_back();
         if (static_cast<int>(line.size()) != g.width)
             throw std::runtime_error(path + ": row " + std::to_string(y) + " has " + std::to_string(line.size()) +
-                                     " characters, expected " + std::to_string(g.width));
+                " characters, expected " + std::to_string(g.width));
         for (char c : line)
         {
             if (c != '.' && c != '#')
@@ -154,7 +152,7 @@ inline Grid loadGrid(const std::string& path)
     return g;
 }
 
-// Writes a map file. `comment` (optional) is written as ';' lines, e.g. "seed 42, density 0.20".
+// Writes a map file. `comment` (optional) is written as a ';' line, e.g. "seed 42, density 0.20".
 inline void saveGrid(const Grid& g, const std::string& path, const std::string& comment = "")
 {
     std::ofstream out(path);
