@@ -30,7 +30,8 @@
 // ---------------------------------------------------------------------------
 //   Node ID   = y * width + x
 //   Movement  = 8-directional by default: straight moves cost 1, diagonal moves cost sqrt(2).
-//               A diagonal move is not allowed if it would cut the corner of a blocked cell.
+//               A diagonal move may pass the corner of ONE blocked cell (corner-cutting), but
+//               may not squeeze between TWO blocked cells that touch diagonally.
 //               Set allowDiagonal = false for 4-directional movement (all moves cost 1).
 //   Heuristic = Euclidean distance between (x, y) coordinates, which never overestimates
 //               the true remaining cost under either movement rule (admissible).
@@ -92,8 +93,8 @@ inline void neighbors(const Grid& g, int node, std::vector<Edge>& out, bool allo
         int nx = x + dx[i], ny = y + dy[i];
         if (!g.isOpen(nx, ny))
             continue;
-        if (i >= 4 && (!g.isOpen(nx, y) || !g.isOpen(x, ny)))
-            continue; // no cutting corners past a wall
+        if (i >= 4 && !g.isOpen(nx, y) && !g.isOpen(x, ny))
+            continue; // no squeezing diagonally between two walls (passing one wall's corner is fine)
         out.push_back({ g.id(nx, ny), i < 4 ? 1.0 : diagonalCost });
     }
 }
