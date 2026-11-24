@@ -1,21 +1,88 @@
-// Benchmark.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+// Benchmark.cpp : runs A* and Dijkstra on every generated map and writes the results to CSV (Module 1D).
 
+#include <cmath>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+<<<<<<< HEAD
 using namespace std;
 
 int main()
 {
     cout << "Hello World!\n";
 }
+=======
+#include <string>
+#include "Grid.h"
+#include "Astar.h"
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
+const int REPEATS = 5; // each search is timed this many times and averaged
 
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+// Runs one search REPEATS times; returns the first result with its time replaced by the average.
+template <typename Search>
+SearchResult timed(Search search, const Grid& g)
+{
+    SearchResult first = search(g, g.startNode(), g.goalNode());
+    double total = first.milliseconds;
+    for (int i = 1; i < REPEATS; ++i)
+        total += search(g, g.startNode(), g.goalNode()).milliseconds;
+    first.milliseconds = total / REPEATS;
+    return first;
+}
+
+int main()
+{
+    const int sizes[] = { 20, 50, 100, 200 };
+    const int densities[] = { 0, 20, 40 };
+    const int seeds[] = { 1, 2, 3 };
+>>>>>>> 92047cdd944c9ed1b8984c0067d4467e00fb07ff
+
+    std::ofstream csv("benchmark.csv");
+    csv << "size,density,seed,cells,blocked_pct,straight_line,distance,"
+        "astar_nodes,dijkstra_nodes,reduction_pct,astar_ms,dijkstra_ms,match\n";
+
+    std::cout << std::fixed << std::setprecision(3);
+    std::cout << "map                    A* nodes  Dijk nodes  reduction   A* ms  Dijk ms  match\n";
+
+    try
+    {
+        for (int size : sizes)
+            for (int density : densities)
+                for (int seed : seeds)
+                {
+                    std::string name = "grid_" + std::to_string(size) + "_d" + std::to_string(density) +
+                        "_s" + std::to_string(seed);
+                    Grid g = loadGrid("..\\maps\\gen\\" + name + ".txt");
+
+                    int blocked = 0;
+                    for (char c : g.cells)
+                        if (c == '#')
+                            ++blocked;
+
+                    SearchResult a = timed([](const Grid& m, int s, int t) { return aStar(m, s, t); }, g);
+                    SearchResult d = timed([](const Grid& m, int s, int t) { return dijkstra(m, s, t); }, g);
+
+                    bool match = a.found && d.found && std::abs(a.distance - d.distance) < 1e-9;
+                    double reduction = 100.0 * (d.nodesExpanded - a.nodesExpanded) / d.nodesExpanded;
+
+                    csv << size << ',' << density << ',' << seed << ',' << g.nodeCount() << ','
+                        << 100.0 * blocked / g.nodeCount() << ','
+                        << euclidean(g, g.startNode(), g.goalNode()) << ',' << a.distance << ','
+                        << a.nodesExpanded << ',' << d.nodesExpanded << ',' << reduction << ','
+                        << a.milliseconds << ',' << d.milliseconds << ',' << (match ? "yes" : "NO") << '\n';
+
+                    std::cout << std::left << std::setw(22) << name << std::right
+                        << std::setw(9) << a.nodesExpanded << std::setw(12) << d.nodesExpanded
+                        << std::setw(10) << reduction << '%' << std::setw(9) << a.milliseconds
+                        << std::setw(9) << d.milliseconds << "  " << (match ? "yes" : "NO") << '\n';
+                }
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "ERROR: " << e.what() << "\n";
+        return 1;
+    }
+
+    std::cout << "\nResults written to Benchmark\\benchmark.csv\n";
+    return 0;
+}
