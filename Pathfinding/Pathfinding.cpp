@@ -1,4 +1,4 @@
-#include "../Common/AStar.h"
+#include "../Common/Astar.h"
 #include <cmath>
 #include <exception>
 #include <fstream>
@@ -11,10 +11,11 @@
 #else
 #include <sys/stat.h>
 #endif
+using namespace std;
 
 namespace
 {
-    const char* const kRequiredTestMap = "open_100x100";
+    const char* const kRequiredTestMap = "Open_100x100";
     const double kRequiredReductionPercent = 70.0;
 
     bool fileExists(const string& path)
@@ -113,7 +114,7 @@ namespace
         ostringstream reductionText;
         reductionText << fixed << setprecision(1) << reduction << "% fewer nodes than Dijkstra";
 
-        // ---- results file ----
+        // results file 
         makeDirectory(root + "results");
         const string outPath = root + "results/" + mapName(mapPath) + "_result.txt";
         ofstream out(outPath);

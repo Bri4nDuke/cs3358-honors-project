@@ -42,6 +42,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+using namespace std;
 
 struct Grid
 {
@@ -49,7 +50,7 @@ struct Grid
     int height = 0;
     int startX = 0, startY = 0;
     int goalX = 0, goalY = 0;
-    std::vector<char> cells; // width * height entries, row by row; '.' open, '#' blocked
+    vector<char> cells; // width * height entries, row by row; '.' open, '#' blocked
 
     int nodeCount() const { return width * height; }
     int id(int x, int y) const { return y * width + x; }
@@ -74,16 +75,16 @@ inline double euclidean(const Grid& g, int a, int b)
 {
     double dx = g.xOf(a) - g.xOf(b);
     double dy = g.yOf(a) - g.yOf(b);
-    return std::sqrt(dx * dx + dy * dy);
+    return sqrt(dx * dx + dy * dy);
 }
 
 // Fills `out` with the open neighbors of `node`. Pass the same vector every call to avoid
 // reallocating it inside the search loop.
-inline void neighbors(const Grid& g, int node, std::vector<Edge>& out, bool allowDiagonal = true)
+inline void neighbors(const Grid& g, int node, vector<Edge>& out, bool allowDiagonal = true)
 {
     static const int dx[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
     static const int dy[8] = { 0, 0, 1, -1, 1, -1, 1, -1 };
-    static const double diagonalCost = std::sqrt(2.0);
+    static const double diagonalCost = sqrt(2.0);
 
     out.clear();
     int x = g.xOf(node), y = g.yOf(node);
@@ -99,22 +100,22 @@ inline void neighbors(const Grid& g, int node, std::vector<Edge>& out, bool allo
     }
 }
 
-// Reads a map file. Throws std::runtime_error with a readable message if the file is bad.
-inline Grid loadGrid(const std::string& path)
+// Reads a map file. Throws runtime_error with a readable message if the file is bad.
+inline Grid loadGrid(const string& path)
 {
-    std::ifstream in(path);
+    ifstream in(path);
     if (!in)
-        throw std::runtime_error("Cannot open map file: " + path);
+        throw runtime_error("Cannot open map file: " + path);
 
     Grid g;
     bool haveGrid = false, haveStart = false, haveGoal = false;
-    std::string line;
-    while (!(haveGrid && haveStart && haveGoal) && std::getline(in, line))
+    string line;
+    while (!(haveGrid && haveStart && haveGoal) && getline(in, line))
     {
         if (line.empty() || line[0] == ';')
             continue;
-        std::istringstream fields(line);
-        std::string key;
+        istringstream fields(line);
+        string key;
         fields >> key;
         if (key == "GRID")
             haveGrid = static_cast<bool>(fields >> g.width >> g.height);
@@ -123,44 +124,44 @@ inline Grid loadGrid(const std::string& path)
         else if (key == "GOAL")
             haveGoal = static_cast<bool>(fields >> g.goalX >> g.goalY);
         else
-            throw std::runtime_error(path + ": unexpected header line: " + line);
+            throw runtime_error(path + ": unexpected header line: " + line);
     }
     if (!haveGrid || !haveStart || !haveGoal)
-        throw std::runtime_error(path + ": missing GRID, START, or GOAL line");
+        throw runtime_error(path + ": missing GRID, START, or GOAL line");
     if (g.width <= 0 || g.height <= 0)
-        throw std::runtime_error(path + ": grid size must be positive");
+        throw runtime_error(path + ": grid size must be positive");
 
     g.cells.reserve(static_cast<size_t>(g.width) * g.height);
     for (int y = 0; y < g.height; ++y)
     {
-        if (!std::getline(in, line))
-            throw std::runtime_error(path + ": expected " + std::to_string(g.height) + " rows, found " + std::to_string(y));
+        if (!getline(in, line))
+            throw runtime_error(path + ": expected " + to_string(g.height) + " rows, found " + to_string(y));
         if (!line.empty() && line.back() == '\r')
             line.pop_back();
         if (static_cast<int>(line.size()) != g.width)
-            throw std::runtime_error(path + ": row " + std::to_string(y) + " has " + std::to_string(line.size()) +
-                                     " characters, expected " + std::to_string(g.width));
+            throw runtime_error(path + ": row " + to_string(y) + " has " + to_string(line.size()) +
+                                     " characters, expected " + to_string(g.width));
         for (char c : line)
         {
             if (c != '.' && c != '#')
-                throw std::runtime_error(path + ": row " + std::to_string(y) + " contains '" + c + "' (use '.' or '#')");
+                throw runtime_error(path + ": row " + to_string(y) + " contains '" + c + "' (use '.' or '#')");
             g.cells.push_back(c);
         }
     }
 
     if (!g.isOpen(g.startX, g.startY))
-        throw std::runtime_error(path + ": START is outside the grid or on a blocked cell");
+        throw runtime_error(path + ": START is outside the grid or on a blocked cell");
     if (!g.isOpen(g.goalX, g.goalY))
-        throw std::runtime_error(path + ": GOAL is outside the grid or on a blocked cell");
+        throw runtime_error(path + ": GOAL is outside the grid or on a blocked cell");
     return g;
 }
 
 // Writes a map file. `comment` (optional) is written as ';' lines, e.g. "seed 42, density 0.20".
-inline void saveGrid(const Grid& g, const std::string& path, const std::string& comment = "")
+inline void saveGrid(const Grid& g, const string& path, const string& comment = "")
 {
-    std::ofstream out(path);
+    ofstream out(path);
     if (!out)
-        throw std::runtime_error("Cannot write map file: " + path);
+        throw runtime_error("Cannot write map file: " + path);
 
     if (!comment.empty())
         out << "; " << comment << '\n';
