@@ -76,7 +76,7 @@ inline double euclidean(const Grid& g, int a, int b)
 
 // Fills `out` with the open neighbors of `node` and the cost of moving to each.
 // Pass the same vector every call so it is not reallocated inside the search loop.
-inline void neighbors(const Grid& g, int node, std::vector<Edge>& out)
+inline void neighbors(const Grid& g, int node, std::vector<Edge>& out, bool allowDiagonal = true)
 {
     // Directions 0-3 are straight (right, left, down, up); 4-7 are diagonal.
     static const int dx[8] = { 1, -1, 0, 0, 1, 1, -1, -1 };
@@ -85,7 +85,8 @@ inline void neighbors(const Grid& g, int node, std::vector<Edge>& out)
 
     out.clear();
     int x = g.xOf(node), y = g.yOf(node);
-    for (int i = 0; i < 8; ++i)
+    int directions = allowDiagonal ? 8 : 4;
+    for (int i = 0; i < directions; ++i)
     {
         int nx = x + dx[i], ny = y + dy[i];
         if (!g.isOpen(nx, ny))
