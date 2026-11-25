@@ -21,3 +21,6 @@ x86/
 
 # Generated benchmark data (regenerate with MazeGen / Benchmark)
 results/
+
+# Excel/Office lock files
+~$*
